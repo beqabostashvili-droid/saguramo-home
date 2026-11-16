@@ -4,8 +4,9 @@ Replaces the existing mahogany slatted pergola next to the pool in
 saguramoqq_31.10.2026.fbx (Autodesk Viewer link https://autode.sk/4tcUVqx).
 
 All site positions were measured in that FBX by top-view hit tests along the
-pool axis (u) and across it (w). Blender X = u, Y = w, Z = 0 at the terrace
-paving (FBX y = -0.17). Origin = pool centre.
+pool axis (u) and across it (w). The script lays things out with X = u,
+Y = w and mirrors Y at the end (final Y = -w) so the plan reads as on site.
+Z = 0 at the terrace paving (FBX y = -0.17). Origin = pool centre.
 
 Measured (metres, +-0.03):
   existing pergola        X -3.54 .. 1.64   Y 4.55 .. 9.70   top +2.43
@@ -233,16 +234,116 @@ for i in range(PANELS):
     yy = GY0 + POST + 0.03 + i * pitch           # east -> SE corner
     box(f"Parked glass east {i + 1}", GX1 - POST - pwy, yy, z0, GX1 - POST, yy + GLASS_T, z1, glass, c_open)
 
-# ---------------------------------------------------------------- furniture (scale)
-c_furn = coll("06 Furniture (scale reference)")
+# ---------------------------------------------------------------- dining (modern)
+# Table turned 90 deg: long axis points from the kitchen toward the pool,
+# so everyone at the table looks at the pool / garden. Thin oak slab on two
+# black steel sled frames, three slim chairs per long side.
+c_furn = coll("06 Dining - modern table and chairs")
 cx, cy = (GX0 + GX1) / 2, (GY0 + GY1) / 2
-tx0, ty0 = cx - 1.1, cy - 0.45
-box("Dining table top", tx0, ty0, 0.72, tx0 + 2.2, ty0 + 0.9, 0.76, wood, c_furn)
-for dx in (0.15, 1.97):
-    box(f"Table leg {dx}", tx0 + dx, ty0 + 0.1, 0.0, tx0 + dx + 0.08, ty0 + 0.8, 0.72, black_al, c_furn)
-for side, yb in (("pool side", ty0 - 0.55), ("back", ty0 + 1.05)):
-    box(f"Bench {side}", tx0 + 0.1, yb, 0.42, tx0 + 2.1, yb + 0.4, 0.46, wood, c_furn)
-    box(f"Bench legs {side}", tx0 + 0.2, yb + 0.05, 0.0, tx0 + 2.0, yb + 0.35, 0.42, black_al, c_furn)
+TL, TW, TT = 2.20, 0.95, 0.03          # table length (Y), width (X), top thickness
+TY1 = GY1 - POST - 0.06 - 0.65 - 1.10  # kitchen front minus 1.10 m aisle
+TY0 = TY1 - TL
+tx0, tx1 = cx - TW / 2, cx + TW / 2
+box("Table top | oak slab 30mm", tx0, TY0, 0.75 - TT, tx1, TY1, 0.75, wood, c_furn)
+F = 0.04  # steel flat bar
+for k, ly in enumerate((TY0 + 0.22, TY1 - 0.22 - F)):
+    # closed rectangular sled frame, inset 60 mm from the table edges
+    box(f"Sled frame {k + 1} | top bar", tx0 + 0.06, ly, 0.75 - TT - F, tx1 - 0.06, ly + F, 0.75 - TT, black_al, c_furn)
+    box(f"Sled frame {k + 1} | foot bar", tx0 + 0.06, ly, 0.0, tx1 - 0.06, ly + F, F, black_al, c_furn)
+    box(f"Sled frame {k + 1} | upright L", tx0 + 0.06, ly, F, tx0 + 0.06 + F, ly + F, 0.75 - TT - F, black_al, c_furn)
+    box(f"Sled frame {k + 1} | upright R", tx1 - 0.06 - F, ly, F, tx1 - 0.06, ly + F, 0.75 - TT - F, black_al, c_furn)
+
+seat = cushion
+L = 0.022  # chair leg section
+
+
+def chair(name, x0, y0, facing):
+    """Slim steel chair 0.46 x 0.50, seat 0.45, back 0.80. facing=+1 -> sits looking +X."""
+    w, d = 0.46, 0.50
+    xa, xb = (x0, x0 + d)
+    ya, yb = y0, y0 + w
+    for i, (lx, ly) in enumerate([(xa, ya), (xb - L, ya), (xa, yb - L), (xb - L, yb - L)]):
+        box(f"{name} leg {i + 1}", lx, ly, 0.0, lx + L, ly + L, 0.43, black_al, c_furn)
+    box(f"{name} seat", xa, ya, 0.43, xb, yb, 0.47, seat, c_furn)
+    bx = xa if facing > 0 else xb - 0.03
+    box(f"{name} back post L", bx, ya, 0.47, bx + 0.03, ya + L, 0.82, black_al, c_furn)
+    box(f"{name} back post R", bx, yb - L, 0.47, bx + 0.03, yb, 0.82, black_al, c_furn)
+    box(f"{name} backrest", bx, ya, 0.62, bx + 0.03, yb, 0.82, seat, c_furn)
+
+
+for i in range(3):
+    yc = TY0 + TL * (i + 0.5) / 3 - 0.23
+    chair(f"Chair W{i + 1}", tx0 - 0.42, yc, +1)   # west side, faces the table
+    chair(f"Chair E{i + 1}", tx1 - 0.08, yc, -1)   # east side
+print("TABLE", round(tx0, 2), round(tx1, 2), round(TY0, 2), round(TY1, 2))
+
+# ---------------------------------------------------------------- outdoor kitchen
+# Straight run along the back (north) glass, away from the pool. It stops
+# short of both back corners so the parked summer glass stacks (NW: west
+# side, NE: north side) still fit, and its back stays clear of the north
+# glass track so those panels can slide behind it.
+c_kit = coll("07 Outdoor kitchen")
+steel = mat("Brushed stainless", (0.62, 0.62, 0.63), 0.28, 1.0)
+front_m = mat("Anthracite kitchen fronts (HPL)", (0.05, 0.052, 0.055), 0.55)
+top_m = mat("Sintered stone worktop, light grey", (0.68, 0.67, 0.64), 0.25)
+grate = mat("Cast-iron grate", (0.03, 0.03, 0.03), 0.7, 0.6)
+
+KX0 = GX0 + POST + 0.95          # clear of NW parked stack (~0.82 m)
+KX1 = GX1 - POST - 0.40          # clear of NE parked stack (~0.24 m)
+KY1 = GY1 - POST - 0.06          # back face, behind it the glass track
+KY0 = KY1 - 0.65                 # depth 650 mm
+PLINTH, CARC, TOP_T = 0.10, 0.86, 0.02   # worktop surface at 0.90 m
+ztop = CARC + TOP_T
+
+box("Kitchen plinth (recessed)", KX0 + 0.02, KY0 + 0.06, 0.0, KX1 - 0.02, KY1, PLINTH, black_al, c_kit)
+box("Kitchen carcass", KX0, KY0 + 0.02, PLINTH, KX1, KY1, CARC, front_m, c_kit)
+box("Worktop sintered stone 20mm", KX0 - 0.02, KY0 - 0.02, CARC, KX1 + 0.02, KY1, ztop, top_m, c_kit)
+
+# module widths left -> right (sum must fit KX1 - KX0)
+modules = [("Under-counter fridge", 0.60), ("Sink", 0.80), ("Drawers", 0.60),
+           ("Gas grill", 0.90), ("Side burner", 0.60)]
+x = KX0 + ((KX1 - KX0) - sum(w for _, w in modules)) / 2
+kit_layout = []
+for name, w in modules:
+    x0, x1 = x, x + w
+    kit_layout.append((name, round(x0, 3), round(x1, 3)))
+    fy = KY0 + 0.01
+    if name == "Under-counter fridge":
+        box("Fridge door, stainless", x0 + 0.005, fy, PLINTH + 0.005, x1 - 0.005, fy + 0.012, CARC - 0.01, steel, c_kit)
+        box("Fridge handle", x0 + 0.06, fy - 0.03, CARC - 0.08, x1 - 0.06, fy, CARC - 0.06, black_al, c_kit)
+    elif name == "Sink":
+        box("Sink door L", x0 + 0.005, fy, PLINTH + 0.005, (x0 + x1) / 2 - 0.002, fy + 0.012, CARC - 0.01, front_m, c_kit)
+        box("Sink door R", (x0 + x1) / 2 + 0.002, fy, PLINTH + 0.005, x1 - 0.005, fy + 0.012, CARC - 0.01, front_m, c_kit)
+        box("Sink bowl (undermount)", x0 + 0.1, KY0 + 0.12, ztop - 0.2, x1 - 0.1, KY1 - 0.12, ztop + 0.001, steel, c_kit)
+        tx = (x0 + x1) / 2
+        box("Tap column", tx - 0.02, KY1 - 0.1, ztop, tx + 0.02, KY1 - 0.06, ztop + 0.35, black_al, c_kit)
+        box("Tap spout", tx - 0.015, KY1 - 0.30, ztop + 0.31, tx + 0.015, KY1 - 0.06, ztop + 0.35, black_al, c_kit)
+    elif name == "Drawers":
+        hgt = (CARC - PLINTH - 0.02) / 3
+        for d in range(3):
+            z = PLINTH + 0.005 + d * hgt
+            box(f"Drawer front {d + 1}", x0 + 0.005, fy, z + 0.003, x1 - 0.005, fy + 0.012, z + hgt - 0.003, front_m, c_kit)
+            box(f"Drawer handle {d + 1}", x0 + 0.1, fy - 0.02, z + hgt - 0.05, x1 - 0.1, fy, z + hgt - 0.035, black_al, c_kit)
+    elif name == "Gas grill":
+        box("Grill doors, stainless", x0 + 0.005, fy, PLINTH + 0.005, x1 - 0.005, fy + 0.012, CARC - 0.12, steel, c_kit)
+        box("Grill control panel", x0 + 0.005, fy - 0.01, CARC - 0.11, x1 - 0.005, fy + 0.02, CARC, steel, c_kit)
+        for kx in range(4):
+            kxx = x0 + 0.15 + kx * 0.2
+            box(f"Grill knob {kx + 1}", kxx - 0.025, fy - 0.04, CARC - 0.08, kxx + 0.025, fy - 0.01, CARC - 0.03, black_al, c_kit)
+        box("Grill body", x0 + 0.03, KY0 + 0.05, ztop - 0.01, x1 - 0.03, KY1 - 0.05, ztop + 0.02, steel, c_kit)
+        box("Grill grate", x0 + 0.06, KY0 + 0.08, ztop + 0.02, x1 - 0.06, KY1 - 0.25, ztop + 0.03, grate, c_kit)
+        box("Grill lid (open)", x0 + 0.03, KY1 - 0.24, ztop + 0.02, x1 - 0.03, KY1 - 0.06, ztop + 0.45, steel, c_kit)
+        # ducted hood above the grill: needed because the gazebo is closed in winter
+        hx0, hx1 = x0 - 0.05, x1 + 0.05
+        box("Extractor hood canopy, stainless", hx0, KY0 + 0.05, CLEAR_H - 0.75, hx1, KY1, CLEAR_H - 0.62, steel, c_kit)
+        box("Extractor hood duct to roof", (hx0 + hx1) / 2 - 0.15, KY1 - 0.35, CLEAR_H - 0.62, (hx0 + hx1) / 2 + 0.15, KY1 - 0.05, CLEAR_H, steel, c_kit)
+        box("Hood LED strip", hx0 + 0.05, KY0 + 0.1, CLEAR_H - 0.752, hx1 - 0.05, KY0 + 0.12, CLEAR_H - 0.75, led, c_kit)
+    elif name == "Side burner":
+        box("Side burner door", x0 + 0.005, fy, PLINTH + 0.005, x1 - 0.005, fy + 0.012, CARC - 0.01, front_m, c_kit)
+        box("Side burner hob", x0 + 0.06, KY0 + 0.1, ztop, x1 - 0.06, KY1 - 0.1, ztop + 0.012, grate, c_kit)
+        box("Wok burner ring", x0 + 0.22, KY0 + 0.26, ztop + 0.012, x1 - 0.22, KY1 - 0.26, ztop + 0.04, grate, c_kit)
+    x = x1
+print("KITCHEN", round(KX0, 3), round(KX1, 3), round(KY0, 3), round(KY1, 3), kit_layout)
 
 # ---------------------------------------------------------------- world, cameras
 world = bpy.data.worlds.new("Sky")
@@ -287,7 +388,8 @@ cam_ext = camera("Camera from deck", (6.5, -8.5, 3.2), (-1.2, 5.5, 0.9), 24)
 cam_top = camera("Camera plan", (-1.0, 2.5, 40.0), (-1.0, 2.5, 0.0), 50)
 cam_top.data.type = "ORTHO"
 cam_top.data.ortho_scale = 21
-cam_int = camera("Camera interior to pool", (1.2, 9.25, 1.5), (-2.0, -1.0, 0.6), 18)
+cam_int = camera("Camera interior to pool", (1.2, 8.3, 1.5), (-2.0, -1.0, 0.6), 18)
+cam_kit = camera("Camera kitchen", (-0.4, 5.0, 1.6), (-0.6, 9.6, 0.95), 20)
 
 r = scene.render
 r.engine = "CYCLES"
@@ -310,8 +412,29 @@ def render(cam, fname):
     print("RENDERED", fname)
 
 
+# ---------------------------------------------------------------- true orientation
+# Everything above is laid out in (u, w). Seen from above, (u, w) is a
+# left-handed pair on the real site (measured in the FBX top view), so the
+# layout must be mirrored to read correctly: final Blender Y = -w.
+# After this step, standing at the pool looking at the gazebo, the raised
+# lawn / retaining wall is on the LEFT, as on site.
+from mathutils import Matrix  # noqa: E402
+
+MIRROR_Y = Matrix.Scale(-1.0, 4, (0.0, 1.0, 0.0))
+done_meshes = set()
+for ob in scene.objects:
+    if ob.type == "MESH":
+        if ob.data.name not in done_meshes:
+            ob.data.transform(MIRROR_Y)
+            ob.data.flip_normals()
+            done_meshes.add(ob.data.name)
+        ob.location.y = -ob.location.y
+    else:
+        ob.location.y = -ob.location.y
+so.rotation_euler.z = math.pi - so.rotation_euler.z
+
 txt = bpy.data.texts.new("START HERE - gazebo")
-txt.write(__doc__)
+txt.write(__doc__ + "\nNOTE: final model coordinates are X = u, Y = -w (true plan orientation).\n")
 
 set_state(True)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, "Saguramo_Gazebo.blend"))
@@ -320,6 +443,7 @@ if os.environ.get("GAZEBO_RENDER", "1") == "1":
     set_state(True)
     render(cam_ext, "gazebo_winter_closed.png")
     render(cam_int, "gazebo_interior_winter.png")
+    render(cam_kit, "gazebo_kitchen.png")
     set_state(False)
     render(cam_ext, "gazebo_summer_open.png")
     render(cam_top, "gazebo_plan.png")
