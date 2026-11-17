@@ -3,3 +3,7 @@ __pycache__/
 *.py[cod]
 *.blend[0-9]*
 *.log
+
+# downloaded CC0 Poly Haven assets (re-fetch with interior-update/fetch_polyhaven.py)
+assets/
+*.blend1
